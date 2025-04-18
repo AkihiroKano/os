@@ -1,0 +1,17 @@
+#!/bin/bash
+
+restore_dir="$HOME/restore"
+backup_root="$HOME/Backup-"
+
+# Поиск последнего каталога резервных копий
+latest_backup=$(find "$HOME" -maxdepth 1 -type d -name "Backup-*" -printf "%T@ %p\n" | sort -nr | head -1 | cut -d' ' -f2)
+
+if [ -z "$latest_backup" ]; then
+    echo "Резервные копии не найдены." >&2
+    exit 1
+fi
+
+# Восстановление
+mkdir -p "$restore_dir" || { echo "Ошибка: не удалось создать каталог восстановления." >&2; exit 1; }
+find "$latest_backup" -type f ! -name "*.*-*-*" -exec cp {} "$restore_dir/" \;
+echo "Файлы восстановлены в $restore_dir."
