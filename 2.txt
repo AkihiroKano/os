@@ -1,5 +1,4 @@
 #!/bin/bash
-
 if [ $# -ne 1 ]; then
     echo "Ошибка: укажите имя файла." >&2
     exit 1
@@ -14,14 +13,11 @@ if [ ! -f "$log_file" ]; then
     exit 1
 fi
 
-# Поиск записей в логе
 matches=()
 while IFS= read -r line; do
-    original_path=$(echo "$line" | awk '{print $1}')
-    name=$(basename "$original_path")
-    link_name=$(echo "$line" | awk '{print $2}')
+    name=$(basename "$(echo "$line" | awk '{print $1}')")
     if [ "$name" == "$target" ]; then
-        matches+=("$original_path $link_name")
+        matches+=("$line")
     fi
 done < "$log_file"
 
@@ -30,7 +26,6 @@ if [ ${#matches[@]} -eq 0 ]; then
     exit 1
 fi
 
-# Восстановление
 for entry in "${matches[@]}"; do
     original_path=$(echo "$entry" | awk '{print $1}')
     link_name=$(echo "$entry" | awk '{print $2}')
