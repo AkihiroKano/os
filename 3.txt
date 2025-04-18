@@ -1,0 +1,36 @@
+#!/bin/bash
+
+source_dir="$HOME/source"
+backup_root="$HOME/Backup-"
+current_date=$(date +%Y-%m-%d)
+report_file="$HOME/backup-report"
+
+# Поиск действующего каталога резервных копий
+existing_backup=$(find "$HOME" -maxdepth 1 -type d -name "Backup-*" -mtime -7 -print -quit)
+
+if [ -z "$existing_backup" ]; then
+    # Создание нового каталога
+    backup_dir="${backup_root}${current_date}"
+    mkdir -p "$backup_dir" || { echo "Ошибка: не удалось создать каталог." >&2; exit 1; }
+    echo "Создан новый каталог: $backup_dir ($current_date)" >> "$report_file"
+    cp -r "$source_dir/." "$backup_dir/" || { echo "Ошибка копирования." >&2; exit 1; }
+    echo "Скопированы файлы:" >> "$report_file"
+    ls "$source_dir" >> "$report_file"
+else
+    # Обновление существующего каталога
+    echo "Обновление резервной копии: $existing_backup ($current_date)" >> "$report_file"
+    while IFS= read -r file; do
+        src="$source_dir/$file"
+        dst="$existing_backup/$file"
+        if [ ! -f "$dst" ]; then
+            cp "$src" "$dst" && echo "Добавлен: $file" >> "$report_file"
+        else
+            src_size=$(stat -c %s "$src")
+            dst_size=$(stat -c %s "$dst")
+            if [ "$src_size" -ne "$dst_size" ]; then
+                mv "$dst" "$dst.$current_date" && cp "$src" "$dst" || { echo "Ошибка версионирования." >&2; exit 1; }
+                echo "Обновлен: $file -> $file.$current_date" >> "$report_file"
+            fi
+        fi
+    done < <(ls "$source_dir")
+fi
