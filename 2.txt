@@ -1,0 +1,55 @@
+#!/bin/bash
+
+if [ $# -ne 1 ]; then
+    echo "Ошибка: укажите имя файла." >&2
+    exit 1
+fi
+
+target="$1"
+trash_dir="$HOME/.trash"
+log_file="$trash_dir/trash.log"
+
+if [ ! -f "$log_file" ]; then
+    echo "Ошибка: файл журнала не найден." >&2
+    exit 1
+fi
+
+# Поиск записей в логе
+matches=()
+while IFS= read -r line; do
+    original_path=$(echo "$line" | awk '{print $1}')
+    name=$(basename "$original_path")
+    link_name=$(echo "$line" | awk '{print $2}')
+    if [ "$name" == "$target" ]; then
+        matches+=("$original_path $link_name")
+    fi
+done < "$log_file"
+
+if [ ${#matches[@]} -eq 0 ]; then
+    echo "Файл '$target' не найден в корзине." >&2
+    exit 1
+fi
+
+# Восстановление
+for entry in "${matches[@]}"; do
+    original_path=$(echo "$entry" | awk '{print $1}')
+    link_name=$(echo "$entry" | awk '{print $2}')
+    echo "Восстановить '$original_path'? [y/N]"
+    read -r confirm
+    if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+        restore_dir=$(dirname "$original_path")
+        if [ ! -d "$restore_dir" ]; then
+            restore_dir="$HOME"
+            echo "Каталог не существует. Восстановление в $restore_dir."
+        fi
+        if [ -f "$restore_dir/$target" ]; then
+            echo "Файл уже существует. Введите новое имя:"
+            read -r new_name
+            target="$new_name"
+        fi
+        ln "$trash_dir/$link_name" "$restore_dir/$target" && rm "$trash_dir/$link_name" || { echo "Ошибка восстановления." >&2; exit 1; }
+        sed -i "/$link_name/d" "$log_file"
+        echo "Файл восстановлен в $restore_dir/$target."
+        exit 0
+    fi
+done
