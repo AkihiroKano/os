@@ -7,7 +7,7 @@ fi
 
 file="$1"
 
-if [ ! -e "$file" ]; then
+if [ ! -f "$file" ]; then
     echo "Ошибка: файл '$file' не существует." >&2
     exit 1
 fi
@@ -15,23 +15,23 @@ fi
 trash_dir="$HOME/.trash"
 log_file="$trash_dir/trash.log"
 
-mkdir -p -- "$trash_dir" || {
+mkdir -p "$trash_dir" || {
     echo "Ошибка: не удалось создать каталог $trash_dir." >&2
     exit 1
 }
 
 link_name=$(date +%s%N)
+full_path=$(realpath "$file")
 
-ln -- "$file" "$trash_dir/$link_name" || {
+ln "$file" "$trash_dir/$link_name" || {
     echo "Ошибка: не удалось создать ссылку." >&2
     exit 1
 }
 
-rm -- "$file" || {
+rm "$file" || {
     echo "Ошибка: не удалось удалить файл." >&2
     exit 1
 }
 
-echo "$(realpath -- "$file")|$link_name" >> "$log_file"
-
-echo "'$file' перемещён в корзину."
+echo "$full_path|||$link_name" >> "$log_file"
+echo "Файл '$file' перемещен в корзину."
