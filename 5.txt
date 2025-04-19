@@ -1,4 +1,9 @@
 #!/bin/bash
+
+# Создаем основную тестовую папку
+test_dir="test_dir"
+mkdir -p "$test_dir" || { echo "Ошибка: не удалось создать каталог $test_dir" >&2; exit 1; }
+
 names=(
     "file with spaces.txt"
     "-r"
@@ -8,22 +13,27 @@ names=(
     "|file|.txt"
     "#abc.txt"
     "'d d'"
-    "–file.txt"
+    "–file.txt"  # Дефис в начале
     "file\nname.txt"
-    "dir with space/subdir?"
+    "subdir with spaces/file.txt"
+    "subdir?/nested_file.log"
+    "weird&dir/|file|"
 )
 
 for name in "${names[@]}"; do
-    # Экранирование спецсимволов
-    safe_name=$(printf "%q" "$name")
+    full_path="$test_dir/$name"
+    
     if [[ "$name" == */* ]]; then
-        mkdir -p "$(dirname "$safe_name")" || echo "Ошибка создания каталога: $name"
+        parent_dir="$test_dir/$(dirname "$name")"
+        mkdir -p "$parent_dir" || { echo "Ошибка создания $parent_dir" >&2; continue; }
     fi
+    
     if [[ "$name" == *.* ]]; then
-        touch "$safe_name" || echo "Ошибка создания файла: $name"
+        touch "$full_path" || echo "Ошибка создания файла $full_path" >&2
     else
-        mkdir -p "$safe_name" || echo "Ошибка создания каталога: $name"
+        mkdir -p "$full_path" || echo "Ошибка создания каталога $full_path" >&2
     fi
 done
 
-echo "Тестовые файлы и каталоги созданы."
+echo "Тестовая структура создана в папке $test_dir:"
+tree "$test_dir"
