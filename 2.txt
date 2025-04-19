@@ -14,12 +14,13 @@ if [ ! -f "$log_file" ]; then
     exit 1
 fi
 
-# Массив совпадений
 matches=()
-while IFS='|' read -r original_path link_name; do
-    name=$(basename -- "$original_path")
-    if [ "$name" = "$target" ]; then
-        matches+=("$original_path|$link_name")
+while IFS= read -r line; do
+    original_path="${line%%|||*}"
+    link_name="${line##*|||}"
+    name=$(basename "$original_path")
+    if [[ "$name" == "$target" ]]; then
+        matches+=("$original_path|||$link_name")
     fi
 done < "$log_file"
 
@@ -28,38 +29,29 @@ if [ ${#matches[@]} -eq 0 ]; then
     exit 1
 fi
 
-# Восстановление
 for entry in "${matches[@]}"; do
-    IFS='|' read -r original_path link_name <<< "$entry"
+    original_path="${entry%%|||*}"
+    link_name="${entry##*|||}"
+
     echo "Восстановить '$original_path'? [y/N]"
     read -r confirm
-    if [[ "$confirm" == [yY] ]]; then
-        restore_dir=$(dirname -- "$original_path")
-        filename=$(basename -- "$original_path")
-
+    if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+        restore_dir=$(dirname "$original_path")
         if [ ! -d "$restore_dir" ]; then
-            echo "Каталог не существует. Восстановление в домашнюю директорию."
             restore_dir="$HOME"
+            echo "Каталог не существует. Восстановление в $restore_dir."
         fi
-
-        restore_path="$restore_dir/$filename"
-
-        if [ -e "$restore_path" ]; then
+        if [ -e "$restore_dir/$target" ]; then
             echo "Файл уже существует. Введите новое имя:"
             read -r new_name
-            restore_path="$restore_dir/$new_name"
+            target="$new_name"
         fi
-
-        # Восстанавливаем и удаляем ссылку из корзины
-        ln -- "$trash_dir/$link_name" "$restore_path" && rm -- "$trash_dir/$link_name" || {
+        ln "$trash_dir/$link_name" "$restore_dir/$target" && rm "$trash_dir/$link_name" || {
             echo "Ошибка восстановления." >&2
             exit 1
         }
-
-        # Удаляем запись из лога
-        grep -vF "|$link_name" "$log_file" > "$log_file.tmp" && mv -- "$log_file.tmp" "$log_file"
-
-        echo "Файл восстановлен в '$restore_path'"
+        sed -i "\|$original_path|||$link_name|d" "$log_file"
+        echo "Файл восстановлен в $restore_dir/$target."
         exit 0
     fi
 done
