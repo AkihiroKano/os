@@ -14,14 +14,10 @@ trash_dir="$HOME/.trash"
 log_file="$trash_dir/trash.log"
 mkdir -p "$trash_dir" || { echo "Ошибка: не удалось создать каталог $trash_dir." >&2; exit 1; }
 
-# Генерация уникального имени ссылки
 link_name=$(date +%s%N)
 
-# Создание жесткой ссылки и удаление файла
-ln "$file" "$trash_dir/$link_name" || { echo "Ошибка: не удалось создать ссылку." >&2; exit 1; }
-rm "$file" || { echo "Ошибка: не удалось удалить файл." >&2; exit 1; }
+ln -- "$file" "$trash_dir/$link_name" || { echo "Ошибка: не удалось создать ссылку." >&2; exit 1; }
+rm -- "$file" || { echo "Ошибка: не удалось удалить файл." >&2; exit 1; }
 
-# Запись в лог с разделителем | и экранированием пробелов
-original_path=$(realpath "$file" | sed 's/ /\\ /g')
-echo "$original_path|$link_name" >> "$log_file"
+echo "$(realpath -- "$file")|$link_name" >> "$log_file"
 echo "Файл '$file' перемещен в корзину."
