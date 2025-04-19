@@ -1,4 +1,5 @@
 #!/bin/bash
+
 if [ $# -ne 1 ]; then
     echo "Ошибка: укажите имя файла." >&2
     exit 1
@@ -13,11 +14,12 @@ if [ ! -f "$log_file" ]; then
     exit 1
 fi
 
+# Массив совпадений
 matches=()
-while IFS='|' read -r original_path link_name item_type; do
+while IFS='|' read -r original_path link_name; do
     name=$(basename -- "$original_path")
-    if [ "$name" == "$target" ]; then
-        matches+=("$original_path|$link_name|$item_type")
+    if [ "$name" = "$target" ]; then
+        matches+=("$original_path|$link_name")
     fi
 done < "$log_file"
 
@@ -26,31 +28,38 @@ if [ ${#matches[@]} -eq 0 ]; then
     exit 1
 fi
 
+# Восстановление
 for entry in "${matches[@]}"; do
-    IFS='|' read -r original_path link_name item_type <<< "$entry"
+    IFS='|' read -r original_path link_name <<< "$entry"
     echo "Восстановить '$original_path'? [y/N]"
     read -r confirm
-    if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+    if [[ "$confirm" == [yY] ]]; then
         restore_dir=$(dirname -- "$original_path")
+        filename=$(basename -- "$original_path")
+
         if [ ! -d "$restore_dir" ]; then
-            restore_dir="."
-            echo "Каталог не существует. Восстановление в текущую директорию."
+            echo "Каталог не существует. Восстановление в домашнюю директорию."
+            restore_dir="$HOME"
         fi
-        
-        if [ -e "$restore_dir/$target" ]; then
+
+        restore_path="$restore_dir/$filename"
+
+        if [ -e "$restore_path" ]; then
             echo "Файл уже существует. Введите новое имя:"
             read -r new_name
-            target="$new_name"
+            restore_path="$restore_dir/$new_name"
         fi
-        
-        if [ "$item_type" == "file" ]; then
-            ln -- "$trash_dir/$link_name" "$restore_dir/$target" && rm -- "$trash_dir/$link_name" || { echo "Ошибка восстановления." >&2; exit 1; }
-        else
-            tar xzf "$trash_dir/$link_name.tar.gz" -C "$restore_dir" && rm -- "$trash_dir/$link_name.tar.gz" || { echo "Ошибка восстановления директории." >&2; exit 1; }
-        fi
-        
-        sed -i "/$link_name/d" "$log_file"
-        echo "'$target' восстановлен в $restore_dir"
+
+        # Восстанавливаем и удаляем ссылку из корзины
+        ln -- "$trash_dir/$link_name" "$restore_path" && rm -- "$trash_dir/$link_name" || {
+            echo "Ошибка восстановления." >&2
+            exit 1
+        }
+
+        # Удаляем запись из лога
+        grep -vF "|$link_name" "$log_file" > "$log_file.tmp" && mv -- "$log_file.tmp" "$log_file"
+
+        echo "Файл восстановлен в '$restore_path'"
         exit 0
     fi
 done
