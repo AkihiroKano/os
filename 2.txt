@@ -15,7 +15,8 @@ fi
 
 matches=()
 while IFS='|' read -r original_path link_name; do
-    name=$(basename "$original_path" | sed 's/\\ / /g')  # Восстановление пробелов
+    # Восстановление пробелов в имени файла
+    name=$(basename "$original_path" | sed 's/\\ / /g')
     if [ "$name" == "$target" ]; then
         matches+=("$original_path|$link_name")
     fi
@@ -28,7 +29,7 @@ fi
 
 for entry in "${matches[@]}"; do
     IFS='|' read -r original_path link_name <<< "$entry"
-    original_path=$(echo "$original_path" | sed 's/ /\\ /g')  # Экранирование для команд
+    original_path=$(echo "$original_path" | sed 's/\\ / /g')  # Убираем экранирование для вывода
     echo "Восстановить '$original_path'? [y/N]"
     read -r confirm
     if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
@@ -37,15 +38,17 @@ for entry in "${matches[@]}"; do
             restore_dir="$HOME"
             echo "Каталог не существует. Восстановление в $restore_dir."
         fi
+        # Проверка конфликта имен
         if [ -f "$restore_dir/$target" ]; then
             echo "Файл уже существует. Введите новое имя:"
             read -r new_name
             target="$new_name"
         fi
-        # Экранирование имен
-        ln "$trash_dir/$link_name" "$(echo "$restore_dir/$target" | sed 's/\\ / /g')" && rm "$trash_dir/$link_name" || { echo "Ошибка восстановления." >&2; exit 1; }
+        # Экранирование для команды ln
+        safe_restore_path=$(printf "%q" "$restore_dir/$target")
+        ln "$trash_dir/$link_name" "$safe_restore_path" && rm "$trash_dir/$link_name" || { echo "Ошибка восстановления." >&2; exit 1; }
         sed -i "/$link_name/d" "$log_file"
-        echo "Файл восстановлен в $(echo "$restore_dir/$target" | sed 's/\\ / /g')."
+        echo "Файл восстановлен в $restore_dir/$target."
         exit 0
     fi
 done
