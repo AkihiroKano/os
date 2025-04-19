@@ -5,7 +5,7 @@ if [ $# -ne 1 ]; then
 fi
 
 file="$1"
-if [ ! -f "$file" ]; then
+if [ ! -e "$file" ]; then
     echo "Ошибка: файл '$file' не существует." >&2
     exit 1
 fi
@@ -14,10 +14,19 @@ trash_dir="$HOME/.trash"
 log_file="$trash_dir/trash.log"
 mkdir -p "$trash_dir" || { echo "Ошибка: не удалось создать каталог $trash_dir." >&2; exit 1; }
 
+# Генерация уникального имени ссылки
 link_name=$(date +%s%N)
 
-ln -- "$file" "$trash_dir/$link_name" || { echo "Ошибка: не удалось создать ссылку." >&2; exit 1; }
-rm -- "$file" || { echo "Ошибка: не удалось удалить файл." >&2; exit 1; }
+# Создание жесткой ссылки и удаление файла
+if [ -f "$file" ]; then
+    ln -- "$file" "$trash_dir/$link_name" || { echo "Ошибка: не удалось создать ссылку." >&2; exit 1; }
+    rm -- "$file" || { echo "Ошибка: не удалось удалить файл." >&2; exit 1; }
+else
+    # Для директорий используем tar
+    tar czf "$trash_dir/$link_name.tar.gz" -- "$file" || { echo "Ошибка: не удалось архивировать директорию." >&2; exit 1; }
+    rm -r -- "$file" || { echo "Ошибка: не удалось удалить директорию." >&2; exit 1; }
+fi
 
-echo "$(realpath -- "$file")|$link_name" >> "$log_file"
-echo "Файл '$file' перемещен в корзину."
+# Запись в лог с абсолютным путем
+echo "$(realpath -- "$file")|$link_name|$(test -f "$file" && echo "file" || echo "dir")" >> "$log_file"
+echo "'$file' перемещен в корзину."
