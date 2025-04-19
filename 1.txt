@@ -14,10 +14,8 @@ trash_dir="$HOME/.trash"
 log_file="$trash_dir/trash.log"
 mkdir -p "$trash_dir" || { echo "Ошибка: не удалось создать каталог $trash_dir." >&2; exit 1; }
 
-# Генерация уникального имени ссылки
 link_name=$(date +%s%N)
 
-# Создание жесткой ссылки и удаление файла
 if [ -f "$file" ]; then
     ln -- "$file" "$trash_dir/$link_name" || { echo "Ошибка: не удалось создать ссылку." >&2; exit 1; }
     rm -- "$file" || { echo "Ошибка: не удалось удалить файл." >&2; exit 1; }
@@ -27,6 +25,5 @@ else
     rm -r -- "$file" || { echo "Ошибка: не удалось удалить директорию." >&2; exit 1; }
 fi
 
-# Запись в лог с абсолютным путем
 echo "$(realpath -- "$file")|$link_name|$(test -f "$file" && echo "file" || echo "dir")" >> "$log_file"
 echo "'$file' перемещен в корзину."
