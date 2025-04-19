@@ -14,10 +14,10 @@ if [ ! -f "$log_file" ]; then
 fi
 
 matches=()
-while IFS='|' read -r original_path link_name; do
+while IFS='|' read -r original_path link_name item_type; do
     name=$(basename -- "$original_path")
     if [ "$name" == "$target" ]; then
-        matches+=("$original_path|$link_name")
+        matches+=("$original_path|$link_name|$item_type")
     fi
 done < "$log_file"
 
@@ -27,23 +27,30 @@ if [ ${#matches[@]} -eq 0 ]; then
 fi
 
 for entry in "${matches[@]}"; do
-    IFS='|' read -r original_path link_name <<< "$entry"
+    IFS='|' read -r original_path link_name item_type <<< "$entry"
     echo "Восстановить '$original_path'? [y/N]"
     read -r confirm
     if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
         restore_dir=$(dirname -- "$original_path")
         if [ ! -d "$restore_dir" ]; then
-            restore_dir="$HOME"
-            echo "Каталог не существует. Восстановление в $restore_dir."
+            restore_dir="."
+            echo "Каталог не существует. Восстановление в текущую директорию."
         fi
-        if [ -f "$restore_dir/$target" ]; then
+        
+        if [ -e "$restore_dir/$target" ]; then
             echo "Файл уже существует. Введите новое имя:"
             read -r new_name
             target="$new_name"
         fi
-        ln -- "$trash_dir/$link_name" "$restore_dir/$target" && rm -- "$trash_dir/$link_name" || { echo "Ошибка восстановления." >&2; exit 1; }
+        
+        if [ "$item_type" == "file" ]; then
+            ln -- "$trash_dir/$link_name" "$restore_dir/$target" && rm -- "$trash_dir/$link_name" || { echo "Ошибка восстановления." >&2; exit 1; }
+        else
+            tar xzf "$trash_dir/$link_name.tar.gz" -C "$restore_dir" && rm -- "$trash_dir/$link_name.tar.gz" || { echo "Ошибка восстановления директории." >&2; exit 1; }
+        fi
+        
         sed -i "/$link_name/d" "$log_file"
-        echo "Файл восстановлен в $restore_dir/$target."
+        echo "'$target' восстановлен в $restore_dir"
         exit 0
     fi
 done
