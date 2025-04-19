@@ -1,18 +1,18 @@
 #!/bin/bash
-restore_dir="$HOME/restore"
-backup_root="$HOME/Backup-"
+restore_dir="/home/user/restore"
+backup_root="/home/user/Backup-"
 
-latest_backup=$(find "$HOME" -maxdepth 1 -type d -name "Backup-*" -printf "%T@ %p\n" | sort -nr | head -1 | cut -d' ' -f2)
+latest_backup=$(find "/home/user" -maxdepth 1 -type d -name "Backup-*" -printf "%T@ %p\n" | sort -nr | head -1 | cut -d' ' -f2)
+
 if [ -z "$latest_backup" ]; then
-    echo "Резервные копии не найдены." >&2
+    echo "Ошибка: резервные копии не найдены." >&2
     exit 1
 fi
 
-mkdir -p "$restore_dir" || { echo "Ошибка: не удалось создать каталог восстановления." >&2; exit 1; }
+mkdir -p "$restore_dir" || { echo "Ошибка: не удалось создать каталог $restore_dir." >&2; exit 1; }
 
-# Копирование файлов с обработкой спецсимволов
 find "$latest_backup" -type f ! -name "*.*-*-*" -print0 | while IFS= read -r -d '' file; do
-    cp -- "$file" "$restore_dir/$(basename "$file")"
+    cp -- "$file" "$restore_dir/$(basename -- "$file")"
 done
 
-echo "Файлы восстановлены в $restore_dir."
+echo "Файлы из $latest_backup восстановлены в $restore_dir"
