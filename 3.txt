@@ -16,7 +16,7 @@ else
     backup_dir="${backup_root}${current_date}"
     mkdir -p "$backup_dir" || { echo "Ошибка: не удалось создать каталог." >&2; exit 1; }
     echo "Создан новый каталог: $backup_dir ($current_date)" >> "$report_file"
-    # Использование find для обработки спецсимволов
+    # Обработка файлов с спецсимволами
     find "$source_dir" -type f -print0 | while IFS= read -r -d '' file; do
         cp -r "$file" "$backup_dir/$(basename "$file")" || { echo "Ошибка копирования." >&2; exit 1; }
         echo "Скопирован: $(basename "$file")" >> "$report_file"
