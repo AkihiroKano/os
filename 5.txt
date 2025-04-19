@@ -12,9 +12,9 @@ names=(
     "&.txt"
     "|file|.txt"
     "#abc.txt"
-    "–file.txt"
+    "-file.txt"
     "file\nname.txt"
-    "dir with space/subdir?"
+    "dir with space/subdir?/file.txt"
 )
 
 for name in "${names[@]}"; do
@@ -30,4 +30,4 @@ for name in "${names[@]}"; do
 done
 
 echo "Тестовая структура создана в каталоге: $(pwd)"
-tree "$pwd"
+tree
