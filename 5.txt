@@ -1,6 +1,6 @@
 #!/bin/bash
 
-test_dir="test_files"
+test_dir="$HOME/test_dir"
 mkdir -p "$test_dir" || { echo "Ошибка: не удалось создать каталог $test_dir"; exit 1; }
 
 cd "$test_dir" || { echo "Ошибка: не удалось перейти в каталог $test_dir"; exit 1; }
