@@ -21,7 +21,7 @@ link_name=$(date +%s%N)
 ln "$file" "$trash_dir/$link_name" || { echo "Ошибка: не удалось создать ссылку." >&2; exit 1; }
 rm "$file" || { echo "Ошибка: не удалось удалить файл." >&2; exit 1; }
 
-# Запись в лог с разделителем |
-original_path=$(realpath "$file" | sed 's/ /\\ /g')  # Экранирование пробелов
+# Запись в лог с разделителем | и экранированием пробелов
+original_path=$(realpath "$file" | sed 's/ /\\ /g')
 echo "$original_path|$link_name" >> "$log_file"
 echo "Файл '$file' перемещен в корзину."
