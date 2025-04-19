@@ -2,7 +2,7 @@
 restore_dir="$HOME/user/restore"
 backup_root="$HOME/user/Backup-"
 
-latest_backup=$(find "$HOMEuser" -maxdepth 1 -type d -name "Backup-*" -printf "%T@ %p\n" | sort -nr | head -1 | cut -d' ' -f2)
+latest_backup=$(find "$HOME/user" -maxdepth 1 -type d -name "Backup-*" -printf "%T@ %p\n" | sort -nr | head -1 | cut -d' ' -f2)
 
 if [ -z "$latest_backup" ]; then
     echo "Ошибка: резервные копии не найдены." >&2
