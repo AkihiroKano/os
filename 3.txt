@@ -1,6 +1,6 @@
 #!/bin/bash
-source_dir="/home/user/source"
-backup_root="/home/user/Backup-"
+source_dir="$HOME/user/source"
+backup_root="$HOME/user/Backup-"
 current_date=$(date +%Y-%m-%d)
 backup_dir=""
 report_file="/home/user/backup-report"
