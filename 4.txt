@@ -10,5 +10,9 @@ fi
 
 mkdir -p "$restore_dir" || { echo "Ошибка: не удалось создать каталог восстановления." >&2; exit 1; }
 
-find "$latest_backup" -type f ! -name "*.*-*-*" -exec cp {} "$restore_dir/" \;
+# Копирование с обработкой спецсимволов
+find "$latest_backup" -type f ! -name "*.*-*-*" -print0 | while IFS= read -r -d '' file; do
+    cp "$file" "$restore_dir/$(basename "$file")"
+done
+
 echo "Файлы восстановлены в $restore_dir."
