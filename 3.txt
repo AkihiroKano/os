@@ -16,26 +16,32 @@ else
     backup_dir="${backup_root}${current_date}"
     mkdir -p "$backup_dir" || { echo "Ошибка: не удалось создать каталог." >&2; exit 1; }
     echo "Создан новый каталог: $backup_dir ($current_date)" >> "$report_file"
-    find "$source_dir" -type f -print0 | while IFS= read -r -d '' file; do
-        cp -r -- "$file" "$backup_dir/$(basename -- "$file")" || { echo "Ошибка копирования." >&2; exit 1; }
-        echo "Скопирован: $(basename -- "$file")" >> "$report_file"
+    find "$source_dir" -mindepth 1 -print0 | while IFS= read -r -d '' item; do
+        if [ -f "$item" ]; then
+            cp -r -- "$item" "$backup_dir/$(basename -- "$item")" || { echo "Ошибка копирования." >&2; exit 1; }
+            echo "Скопирован: $item" >> "$report_file"
+        elif [ -d "$item" ]; then
+            mkdir -p "$backup_dir/$item" || { echo "Ошибка создания каталога." >&2; exit 1; }
+        fi
     done
     exit 0
 fi
 
 echo "Обновление резервной копии: $backup_dir ($current_date)" >> "$report_file"
-find "$source_dir" -type f -print0 | while IFS= read -r -d '' file; do
-    name=$(basename -- "$file")
-    src="$file"
-    dst="$backup_dir/$name"
-    if [ ! -f "$dst" ]; then
-        cp -- "$src" "$dst" && echo "Добавлен: $name" >> "$report_file"
-    else
-        src_size=$(stat -c %s -- "$src")
-        dst_size=$(stat -c %s -- "$dst")
-        if [ "$src_size" -ne "$dst_size" ]; then
-            mv -- "$dst" "$dst.$current_date" && cp -- "$src" "$dst" || { echo "Ошибка версионирования." >&2; exit 1; }
-            echo "Обновлен: $name -> $name.$current_date" >> "$report_file"
+find "$source_dir" -mindepth 1 -print0 | while IFS= read -r -d '' item; do
+    name="${item#*/}"
+    if [ -f "$item" ]; then
+        if [ ! -f "$backup_dir/$name" ]; then
+            cp -- "$item" "$backup_dir/$name" && echo "Добавлен: $name" >> "$report_file"
+        else
+            src_size=$(stat -c %s -- "$item")
+            dst_size=$(stat -c %s -- "$backup_dir/$name")
+            if [ "$src_size" -ne "$dst_size" ]; then
+                mv -- "$backup_dir/$name" "$backup_dir/$name.$current_date" && cp -- "$item" "$backup_dir/$name" || { echo "Ошибка версионирования." >&2; exit 1; }
+                echo "Обновлен: $name -> $name.$current_date" >> "$report_file"
+            fi
         fi
+    elif [ -d "$item" ]; then
+        mkdir -p "$backup_dir/$name" || echo "Ошибка создания каталога: $name"
     fi
 done
