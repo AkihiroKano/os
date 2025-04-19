@@ -1,9 +1,9 @@
 #!/bin/bash
 
 test_dir="test_files"
-mkdir -p "$TEST_DIR" || { echo "Ошибка: не удалось создать каталог $TEST_DIR"; exit 1; }
+mkdir -p "$test_dir" || { echo "Ошибка: не удалось создать каталог $test_dir"; exit 1; }
 
-cd "$test_dir" || { echo "Ошибка: не удалось перейти в каталог $TEST_DIR"; exit 1; }
+cd "$test_dir" || { echo "Ошибка: не удалось перейти в каталог $test_dir"; exit 1; }
 
 names=(
     "file with spaces.txt"
@@ -24,6 +24,7 @@ for name in "${names[@]}"; do
     
     if [[ "$name" == *.* ]]; then
         touch -- "$name" || echo "Ошибка создания файла: $name"
+        echo "Тестовое содержимое" > "$name"
     else
         mkdir -p "$name" || echo "Ошибка создания каталога: $name"
     fi
