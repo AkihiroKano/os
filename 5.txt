@@ -1,13 +1,4 @@
 #!/bin/bash
-# Скрипт создает тестовые файлы в текущей директории и в /home/user/source/
-
-# Директории для создания файлов
-dirs=(
-    "$(pwd)"      # Текущая директория со скриптами
-    "/home/user/source"  # Директория для тестирования backup/upback
-)
-
-# Список имен файлов/каталогов для тестирования
 names=(
     "file with spaces.txt"
     "-r"
@@ -17,40 +8,22 @@ names=(
     "|file|.txt"
     "#abc.txt"
     "'d d'"
-    "–file.txt"  # Дефис в начале (не тире!)
+    "–file.txt"
     "file\nname.txt"
     "dir with space/subdir?"
 )
 
-# Создаем файлы в каждой целевой директории
-for dir in "${dirs[@]}"; do
-    # Создаем целевую директорию если ее нет
-    mkdir -p "$dir" || { echo "Ошибка: не удалось создать директорию $dir"; exit 1; }
-    
-    echo "Создаем тестовые файлы в $dir"
-    
-    for name in "${names[@]}"; do
-        # Полный путь к файлу/директории
-        full_path="$dir/$name"
-        
-        # Если имя содержит "/", создаем поддиректории
-        if [[ "$name" == */* ]]; then
-            mkdir -p "$(dirname "$full_path")" || { echo "Ошибка создания поддиректории для $full_path"; continue; }
-        fi
-        
-        # Создаем файл или директорию
-        if [[ "$name" == *"."* ]]; then
-            # Для файлов
-            touch "$full_path" 2>/dev/null || echo "Не удалось создать файл: $full_path"
-            # Записываем тестовое содержимое
-            echo "Это тестовый файл: $name" > "$full_path" 2>/dev/null
-        else
-            # Для директорий
-            mkdir "$full_path" 2>/dev/null || echo "Не удалось создать директорию: $full_path"
-        fi
-    done
+for name in "${names[@]}"; do
+    # Экранирование спецсимволов
+    safe_name=$(printf "%q" "$name")
+    if [[ "$name" == */* ]]; then
+        mkdir -p "$(dirname "$safe_name")" || echo "Ошибка создания каталога: $name"
+    fi
+    if [[ "$name" == *.* ]]; then
+        touch "$safe_name" || echo "Ошибка создания файла: $name"
+    else
+        mkdir -p "$safe_name" || echo "Ошибка создания каталога: $name"
+    fi
 done
 
-echo "Тестовые файлы успешно созданы в:"
-echo "1. Текущей директории: $(pwd)"
-echo "2. /home/user/source/"
+echo "Тестовые файлы и каталоги созданы."
