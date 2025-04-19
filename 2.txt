@@ -15,10 +15,12 @@ if [ ! -f "$log_file" ]; then
 fi
 
 matches=()
-while IFS='|' read -r original_path link_name; do
+while IFS= read -r line; do
+    original_path="${line%%|||*}"      # всё до |||
+    link_name="${line##*|||}"          # всё после |||
     name=$(basename -- "$original_path")
     if [ "$name" = "$target" ]; then
-        matches+=("$original_path|$link_name")
+        matches+=("$line")
     fi
 done < "$log_file"
 
@@ -28,7 +30,9 @@ if [ ${#matches[@]} -eq 0 ]; then
 fi
 
 for entry in "${matches[@]}"; do
-    IFS='|' read -r original_path link_name <<< "$entry"
+    original_path="${entry%%|||*}"
+    link_name="${entry##*|||}"
+
     echo "Восстановить '$original_path'? [y/N]"
     read -r confirm
     if [[ "$confirm" == [yY] ]]; then
@@ -53,7 +57,7 @@ for entry in "${matches[@]}"; do
             exit 1
         }
 
-        grep -vF "|$link_name" "$log_file" > "$log_file.tmp" && mv -- "$log_file.tmp" "$log_file"
+        grep -vF "|||$link_name" "$log_file" > "$log_file.tmp" && mv -- "$log_file.tmp" "$log_file"
 
         echo "Файл восстановлен в '$restore_path'"
         exit 0
