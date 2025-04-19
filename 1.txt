@@ -31,5 +31,5 @@ rm -- "$file" || {
     exit 1
 }
 
-echo "$(realpath -- "$file")|$link_name" >> "$log_file"
+echo "$(realpath -- "$file")|||$link_name" >> "$log_file"
 echo "'$file' перемещён в корзину."
