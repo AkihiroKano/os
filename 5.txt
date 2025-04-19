@@ -1,39 +1,33 @@
 #!/bin/bash
 
-# Создаем основную тестовую папку
-test_dir="test_dir"
-mkdir -p "$test_dir" || { echo "Ошибка: не удалось создать каталог $test_dir" >&2; exit 1; }
+test_dir="test_files"
+mkdir -p "$TEST_DIR" || { echo "Ошибка: не удалось создать каталог $TEST_DIR"; exit 1; }
+
+cd "$test_dir" || { echo "Ошибка: не удалось перейти в каталог $TEST_DIR"; exit 1; }
 
 names=(
     "file with spaces.txt"
-    "-r"
     "\\path\\file"
     "??.txt"
     "&.txt"
     "|file|.txt"
     "#abc.txt"
-    "'d d'"
-    "–file.txt"  # Дефис в начале
+    "–file.txt"
     "file\nname.txt"
-    "subdir with spaces/file.txt"
-    "subdir?/nested_file.log"
-    "weird&dir/|file|"
+    "dir with space/subdir?"
 )
 
 for name in "${names[@]}"; do
-    full_path="$test_dir/$name"
-    
     if [[ "$name" == */* ]]; then
-        parent_dir="$test_dir/$(dirname "$name")"
-        mkdir -p "$parent_dir" || { echo "Ошибка создания $parent_dir" >&2; continue; }
+        mkdir -p "$(dirname "$name")" || echo "Ошибка создания подкаталога: $name"
     fi
     
     if [[ "$name" == *.* ]]; then
-        touch "$full_path" || echo "Ошибка создания файла $full_path" >&2
+        touch -- "$name" || echo "Ошибка создания файла: $name"
     else
-        mkdir -p "$full_path" || echo "Ошибка создания каталога $full_path" >&2
+        mkdir -p "$name" || echo "Ошибка создания каталога: $name"
     fi
 done
 
-echo "Тестовая структура создана в папке $test_dir:"
-tree "$test_dir"
+echo "Тестовая структура создана в каталоге: $(pwd)"
+tree "$pwd"
