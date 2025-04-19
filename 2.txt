@@ -14,12 +14,12 @@ if [ ! -f "$log_file" ]; then
 fi
 
 matches=()
-while IFS= read -r line; do
-    name=$(basename "$(echo "$line" | awk '{print $1}')")
+while IFS='|' read -r original_path link_name; do
+    name=$(basename "$original_path" | sed 's/\\ / /g')  # Восстановление пробелов
     if [ "$name" == "$target" ]; then
-        matches+=("$line")
+        matches+=("$original_path|$link_name")
     fi
-done < "$log_file"
+done < <(sed 's/\\ / /g' "$log_file")  # Корректная обработка путей
 
 if [ ${#matches[@]} -eq 0 ]; then
     echo "Файл '$target' не найден в корзине." >&2
@@ -27,8 +27,8 @@ if [ ${#matches[@]} -eq 0 ]; then
 fi
 
 for entry in "${matches[@]}"; do
-    original_path=$(echo "$entry" | awk '{print $1}')
-    link_name=$(echo "$entry" | awk '{print $2}')
+    IFS='|' read -r original_path link_name <<< "$entry"
+    original_path=$(echo "$original_path" | sed 's/ /\\ /g')  # Экранирование для команд
     echo "Восстановить '$original_path'? [y/N]"
     read -r confirm
     if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
@@ -42,9 +42,10 @@ for entry in "${matches[@]}"; do
             read -r new_name
             target="$new_name"
         fi
-        ln "$trash_dir/$link_name" "$restore_dir/$target" && rm "$trash_dir/$link_name" || { echo "Ошибка восстановления." >&2; exit 1; }
+        # Экранирование имен
+        ln "$trash_dir/$link_name" "$(echo "$restore_dir/$target" | sed 's/\\ / /g')" && rm "$trash_dir/$link_name" || { echo "Ошибка восстановления." >&2; exit 1; }
         sed -i "/$link_name/d" "$log_file"
-        echo "Файл восстановлен в $restore_dir/$target."
+        echo "Файл восстановлен в $(echo "$restore_dir/$target" | sed 's/\\ / /g')."
         exit 0
     fi
 done
