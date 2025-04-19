@@ -16,24 +16,27 @@ else
     backup_dir="${backup_root}${current_date}"
     mkdir -p "$backup_dir" || { echo "Ошибка: не удалось создать каталог." >&2; exit 1; }
     echo "Создан новый каталог: $backup_dir ($current_date)" >> "$report_file"
-    cp -r "$source_dir/." "$backup_dir/" || { echo "Ошибка копирования." >&2; exit 1; }
-    echo "Скопированы файлы:" >> "$report_file"
-    ls "$source_dir" >> "$report_file"
+    # Использование find для обработки спецсимволов
+    find "$source_dir" -type f -print0 | while IFS= read -r -d '' file; do
+        cp -r "$file" "$backup_dir/$(basename "$file")" || { echo "Ошибка копирования." >&2; exit 1; }
+        echo "Скопирован: $(basename "$file")" >> "$report_file"
+    done
     exit 0
 fi
 
 echo "Обновление резервной копии: $backup_dir ($current_date)" >> "$report_file"
-while IFS= read -r file; do
-    src="$source_dir/$file"
-    dst="$backup_dir/$file"
+find "$source_dir" -type f -print0 | while IFS= read -r -d '' file; do
+    name=$(basename "$file")
+    src="$file"
+    dst="$backup_dir/$name"
     if [ ! -f "$dst" ]; then
-        cp "$src" "$dst" && echo "Добавлен: $file" >> "$report_file"
+        cp "$src" "$dst" && echo "Добавлен: $name" >> "$report_file"
     else
         src_size=$(stat -c %s "$src")
         dst_size=$(stat -c %s "$dst")
         if [ "$src_size" -ne "$dst_size" ]; then
             mv "$dst" "$dst.$current_date" && cp "$src" "$dst" || { echo "Ошибка версионирования." >&2; exit 1; }
-            echo "Обновлен: $file -> $file.$current_date" >> "$report_file"
+            echo "Обновлен: $name -> $name.$current_date" >> "$report_file"
         fi
     fi
-done < <(ls "$source_dir")
+done
