@@ -3,10 +3,10 @@ source_dir="$HOME/user/source"
 backup_root="$HOME/user/Backup-"
 current_date=$(date +%Y-%m-%d)
 backup_dir=""
-report_file="/home/user/backup-report"
+report_file="$HOME/user/backup-report"
 
 find_backup() {
-    find "/home/user" -maxdepth 1 -type d -name "Backup-*" -mtime -7 -print -quit
+    find "$HOME/user" -maxdepth 1 -type d -name "Backup-*" -mtime -7 -print -quit
 }
 
 if [ ! -d "$source_dir" ]; then
